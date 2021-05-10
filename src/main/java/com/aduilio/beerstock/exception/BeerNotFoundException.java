@@ -11,4 +11,8 @@ public class BeerNotFoundException extends Exception {
 	public BeerNotFoundException(final Long id) {
 		super("Invalid id " + id);
 	}
+
+	public BeerNotFoundException(final String name) {
+		super("Invalid name " + name);
+	}
 }
