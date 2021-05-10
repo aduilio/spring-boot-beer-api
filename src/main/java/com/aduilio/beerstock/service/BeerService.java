@@ -24,7 +24,6 @@ import lombok.AllArgsConstructor;
 public class BeerService {
 
 	private final BeerRepository beerRepository;
-	private final BeerMapper beerMapper = BeerMapper.INSTANCE;
 
 	/**
 	 * Creates a beer.
@@ -36,7 +35,7 @@ public class BeerService {
 	 */
 	public Long create(final BeerDto beerDto) throws BeerAlreadyRegisteredException {
 		verifyName(beerDto.getName());
-		return beerRepository.save(beerMapper.mapBeerFrom(beerDto))
+		return beerRepository.save(BeerMapper.INSTANCE.mapBeerFrom(beerDto))
 				.getId();
 	}
 
@@ -50,7 +49,7 @@ public class BeerService {
 	 */
 	public BeerDto readByName(final String name) throws BeerNotFoundException {
 		return beerRepository.findByName(name)
-				.map(beerMapper::mapBeerDtoFrom)
+				.map(BeerMapper.INSTANCE::mapBeerDtoFrom)
 				.orElseThrow(() -> new BeerNotFoundException(name));
 	}
 
@@ -62,7 +61,7 @@ public class BeerService {
 	public List<BeerDto> list() {
 		return beerRepository.findAll()
 				.stream()
-				.map(beerMapper::mapBeerDtoFrom)
+				.map(BeerMapper.INSTANCE::mapBeerDtoFrom)
 				.collect(Collectors.toList());
 	}
 
