@@ -3,6 +3,9 @@ package com.aduilio.beerstock.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * The beer types available.
+ */
 @Getter
 @AllArgsConstructor
 public enum BeerType {

@@ -14,6 +14,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents a beer.
+ */
 @Data
 @Entity
 @NoArgsConstructor
