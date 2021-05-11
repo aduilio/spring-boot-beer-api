@@ -1,1 +1,3 @@
-Projeto desenvolvido no curso da Digital Innovation One
+Cadastro de cervejas com Spring Boot
+
+Projeto desenvolvimento nos cursos da Digital Innovation: Expert class
