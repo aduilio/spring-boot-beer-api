@@ -5,6 +5,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -24,6 +25,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
 import com.aduilio.beerstock.dto.BeerDto;
+import com.aduilio.beerstock.dto.QuantityDto;
+import com.aduilio.beerstock.exception.BeerExceedStockException;
 import com.aduilio.beerstock.exception.BeerNotFoundException;
 import com.aduilio.beerstock.service.BeerService;
 import com.aduilio.beerstock.utils.BeerTestsUtil;
@@ -123,5 +126,52 @@ class BeerControllerTest {
 
 		mockMvc.perform(delete(URL + "/" + BeerTestsUtil.BEER_ID).accept(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void stockWithValidIdShouldReturnBeer() throws JsonProcessingException, Exception {
+		final BeerDto beerDto = BeerTestsUtil.createBeerDto();
+		final int qtt = 1;
+		beerDto.setQuantity(beerDto.getQuantity() + qtt);
+
+		when(beerServiceMock.stock(beerDto.getId(), beerDto.getQuantity())).thenReturn(beerDto);
+
+		mockMvc.perform(patch(URL + "/" + BeerTestsUtil.BEER_ID + "/stock").contentType(MediaType.APPLICATION_JSON)
+				.content(new ObjectMapper().writeValueAsString(QuantityDto.builder()
+						.quantity(beerDto.getQuantity())
+						.build()))
+				.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", is(BeerTestsUtil.BEER_ID.intValue())))
+				.andExpect(jsonPath("$.name", is(BeerTestsUtil.BEER_NAME)))
+				.andExpect(jsonPath("$.brand", is(BeerTestsUtil.BEER_BRAND)))
+				.andExpect(jsonPath("$.quantity", is(BeerTestsUtil.BEER_QTT + qtt)))
+				.andExpect(jsonPath("$.max", is(BeerTestsUtil.BEER_MAX)));
+	}
+
+	@Test
+	void stockWithInvalidIdShouldReturnError() throws JsonProcessingException, Exception {
+		doThrow(BeerNotFoundException.class).when(beerServiceMock)
+				.stock(BeerTestsUtil.BEER_ID, BeerTestsUtil.BEER_QTT);
+
+		mockMvc.perform(patch(URL + "/" + BeerTestsUtil.BEER_ID + "/stock").contentType(MediaType.APPLICATION_JSON)
+				.content(new ObjectMapper().writeValueAsString(QuantityDto.builder()
+						.quantity(BeerTestsUtil.BEER_QTT)
+						.build()))
+				.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void stockWithInvalidQuantityShouldReturnError() throws JsonProcessingException, Exception {
+		doThrow(BeerExceedStockException.class).when(beerServiceMock)
+				.stock(BeerTestsUtil.BEER_ID, BeerTestsUtil.BEER_QTT);
+
+		mockMvc.perform(patch(URL + "/" + BeerTestsUtil.BEER_ID + "/stock").contentType(MediaType.APPLICATION_JSON)
+				.content(new ObjectMapper().writeValueAsString(QuantityDto.builder()
+						.quantity(BeerTestsUtil.BEER_QTT)
+						.build()))
+				.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest());
 	}
 }
