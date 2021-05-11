@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import com.aduilio.beerstock.dto.BeerDto;
 import com.aduilio.beerstock.entity.Beer;
 import com.aduilio.beerstock.exception.BeerAlreadyRegisteredException;
+import com.aduilio.beerstock.exception.BeerExceedStockException;
+import com.aduilio.beerstock.exception.BeerNegativeStockException;
 import com.aduilio.beerstock.exception.BeerNotFoundException;
 import com.aduilio.beerstock.mapper.BeerMapper;
 import com.aduilio.beerstock.repository.BeerRepository;
@@ -75,6 +77,26 @@ public class BeerService {
 	public void delete(final Long id) throws BeerNotFoundException {
 		readById(id);
 		beerRepository.deleteById(id);
+	}
+
+	/**
+	 * Change the stock quantity to a specific beer.
+	 *
+	 * @param beerId   id of the beer
+	 * @param quantity to increment
+	 *
+	 * @return {@link BeerDto}
+	 * @throws BeerNotFoundException      if the id is does not exist
+	 * @throws BeerExceedStockException   if the quantity overflowed the available
+	 *                                    space
+	 * @throws BeerNegativeStockException if the quantity is less than the quantity
+	 */
+	public BeerDto stock(final Long beerId, final int quantity)
+			throws BeerNotFoundException, BeerExceedStockException, BeerNegativeStockException {
+		final Beer beer = readById(beerId);
+		beer.increment(quantity);
+
+		return BeerMapper.INSTANCE.mapBeerDtoFrom(beerRepository.save(beer));
 	}
 
 	private void verifyName(final String name) throws BeerAlreadyRegisteredException {

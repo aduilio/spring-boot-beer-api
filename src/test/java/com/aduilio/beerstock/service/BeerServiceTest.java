@@ -20,6 +20,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.aduilio.beerstock.dto.BeerDto;
 import com.aduilio.beerstock.entity.Beer;
 import com.aduilio.beerstock.exception.BeerAlreadyRegisteredException;
+import com.aduilio.beerstock.exception.BeerExceedStockException;
+import com.aduilio.beerstock.exception.BeerNegativeStockException;
 import com.aduilio.beerstock.exception.BeerNotFoundException;
 import com.aduilio.beerstock.mapper.BeerMapper;
 import com.aduilio.beerstock.repository.BeerRepository;
@@ -115,5 +117,58 @@ class BeerServiceTest {
 
 		assertThat(exception.getMessage()).isEqualTo("Invalid id " + BeerTestsUtil.BEER_ID);
 		verify(beerRepositoryMock, never()).deleteById(BeerTestsUtil.BEER_ID);
+	}
+
+	@Test
+	void incrementWithValidValueShouldReturnIncremented()
+			throws BeerNotFoundException, BeerExceedStockException, BeerNegativeStockException {
+		final Beer beer = BeerTestsUtil.createBeer();
+
+		final int qtt = 1;
+		final Beer beerWithIncrement = BeerTestsUtil.createBeer();
+		beerWithIncrement.increment(qtt);
+		final BeerDto expected = beerMapper.mapBeerDtoFrom(beerWithIncrement);
+
+		when(beerRepositoryMock.findById(BeerTestsUtil.BEER_ID)).thenReturn(Optional.of(beer));
+		when(beerRepositoryMock.save(beerWithIncrement)).thenReturn(beerWithIncrement);
+
+		final BeerDto result = beerService.stock(BeerTestsUtil.BEER_ID, qtt);
+
+		assertThat(result).isEqualTo(expected);
+	}
+
+	@Test
+	void stockWithInvalidIdShouldThrowException() throws BeerNotFoundException {
+		when(beerRepositoryMock.findById(BeerTestsUtil.BEER_ID)).thenReturn(Optional.empty());
+
+		final BeerNotFoundException exception = assertThrows(BeerNotFoundException.class,
+				() -> beerService.stock(BeerTestsUtil.BEER_ID, 10));
+
+		assertThat(exception.getMessage()).isEqualTo("Invalid id " + BeerTestsUtil.BEER_ID);
+	}
+
+	@Test
+	void stockWithExceedValueShouldThrowException() throws BeerNotFoundException, BeerExceedStockException {
+		final Beer beer = BeerTestsUtil.createBeer();
+
+		when(beerRepositoryMock.findById(BeerTestsUtil.BEER_ID)).thenReturn(Optional.of(beer));
+
+		final BeerExceedStockException exception = assertThrows(BeerExceedStockException.class,
+				() -> beerService.stock(BeerTestsUtil.BEER_ID, beer.getMax()));
+
+		assertThat(exception.getMessage())
+				.isEqualTo("Space available for " + (beer.getMax() - beer.getQuantity()) + " beer(s)");
+	}
+
+	@Test
+	void stockWithNegativeValueShouldThrowException() throws BeerNotFoundException, BeerExceedStockException {
+		final Beer beer = BeerTestsUtil.createBeer();
+
+		when(beerRepositoryMock.findById(BeerTestsUtil.BEER_ID)).thenReturn(Optional.of(beer));
+
+		final BeerNegativeStockException exception = assertThrows(BeerNegativeStockException.class,
+				() -> beerService.stock(BeerTestsUtil.BEER_ID, -beer.getMax()));
+
+		assertThat(exception.getMessage()).isEqualTo("Only available " + beer.getQuantity() + " beer(s)");
 	}
 }
