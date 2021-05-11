@@ -9,6 +9,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 import com.aduilio.beerstock.enums.BeerType;
+import com.aduilio.beerstock.exception.BeerExceedStockException;
+import com.aduilio.beerstock.exception.BeerNegativeStockException;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,4 +46,16 @@ public class Beer {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private BeerType type;
+
+	public void increment(final int quantity) throws BeerExceedStockException, BeerNegativeStockException {
+		if (quantity > 0 && this.max - this.quantity < quantity) {
+			throw new BeerExceedStockException(this.max - this.quantity);
+		}
+
+		if (quantity < 0 && this.quantity - Math.abs(quantity) < 0) {
+			throw new BeerNegativeStockException(this.quantity);
+		}
+
+		this.quantity += quantity;
+	}
 }
